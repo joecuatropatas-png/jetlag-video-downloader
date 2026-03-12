@@ -61,7 +61,7 @@ def process_video():
         "ffmpeg",
         "-i", input_file,
         "-i", "Watermark-escapexperts.png",
-        "-filter_complex", "overlay=20:20",
+        "-filter_complex", "[1]format=rgba,colorchannelmixer=aa=0.6[wm];[0][wm]overlay=W-w-30:30",
         "-codec:a", "copy",
         output_file
     ])
