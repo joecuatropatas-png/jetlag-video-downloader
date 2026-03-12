@@ -20,6 +20,7 @@ s3 = boto3.client(
 
 PUBLIC_URL = "https://pub-953880307ee54af28bbea36d6f00a07c.r2.dev"
 
+
 @app.route("/download")
 def download():
 
@@ -44,16 +45,37 @@ def download():
         "video_url": public_url
     })
 
+
 @app.route("/process", methods=["POST"])
 def process_video():
 
     data = request.json
     video_url = data.get("video_url")
 
+    watermark_width = data.get("watermark_width", 0.22)
+    opacity = data.get("opacity", 0.6)
+    position = data.get("position", "top-right")
+    margin = data.get("margin", 30)
+
+    # calcular posición
+    if position == "top-right":
+        overlay_position = f"W-w-{margin}:{margin}"
+    elif position == "top-left":
+        overlay_position = f"{margin}:{margin}"
+    elif position == "bottom-right":
+        overlay_position = f"W-w-{margin}:H-h-{margin}"
+    elif position == "bottom-left":
+        overlay_position = f"{margin}:H-h-{margin}"
+    else:
+        overlay_position = f"W-w-{margin}:{margin}"
+
+    # crear filtro dinámico
+    filter_complex = f"[1][0]scale2ref=w=iw*{watermark_width}:h=ow/mdar[wm][vid];[wm]format=rgba,colorchannelmixer=aa={opacity}[wm2];[vid][wm2]overlay={overlay_position}"
+
     input_file = f"{uuid.uuid4()}.mp4"
     output_file = f"processed-{uuid.uuid4()}.mp4"
 
-    # descargar el video desde R2
+    # descargar video desde R2
     subprocess.run(["curl", "-L", video_url, "-o", input_file])
 
     # aplicar watermark
@@ -61,7 +83,7 @@ def process_video():
         "ffmpeg",
         "-i", input_file,
         "-i", "Watermark-escapexperts.png",
-        "-filter_complex", "[1]format=rgba,colorchannelmixer=aa=0.6[wm];[0][wm]overlay=W-w-30:30",
+        "-filter_complex", filter_complex,
         "-codec:a", "copy",
         output_file
     ])
@@ -77,6 +99,7 @@ def process_video():
     return jsonify({
         "deliverie_url": public_url
     })
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
