@@ -39,7 +39,7 @@ if not os.path.exists(filename):
     
     s3.upload_file(filename, R2_BUCKET, filename)
 
-    public_url = f"https://{R2_BUCKET}.r2.dev/{filename}"
+    public_url = f"https://pub-953880307ee54af28bbea36d6f00a07c.r2.dev/{filename}"
 
     os.remove(filename)
 
