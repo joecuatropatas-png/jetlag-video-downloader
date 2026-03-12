@@ -25,12 +25,18 @@ def download():
     filename = f"{uuid.uuid4()}.mp4"
 
     subprocess.run([
-        "yt-dlp",
-        "-f", "mp4",
-        "-o", filename,
-        url
-    ])
+    "yt-dlp",
+    "-f", "best",
+    "-o", filename,
+    "--no-playlist",
+    url
+])
 
+if not os.path.exists(filename):
+    return jsonify({
+        "error": "video download failed"
+    }), 500
+    
     s3.upload_file(filename, R2_BUCKET, filename)
 
     public_url = f"https://{R2_BUCKET}.r2.dev/{filename}"
