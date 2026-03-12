@@ -44,5 +44,39 @@ def download():
         "video_url": public_url
     })
 
+@app.route("/process", methods=["POST"])
+def process_video():
+
+    data = request.json
+    video_url = data.get("video_url")
+
+    input_file = f"{uuid.uuid4()}.mp4"
+    output_file = f"processed-{uuid.uuid4()}.mp4"
+
+    # descargar el video desde R2
+    subprocess.run(["curl", "-L", video_url, "-o", input_file])
+
+    # aplicar watermark
+    subprocess.run([
+        "ffmpeg",
+        "-i", input_file,
+        "-i", "Watermark-escapexperts.png",
+        "-filter_complex", "overlay=20:20",
+        "-codec:a", "copy",
+        output_file
+    ])
+
+    # subir a R2
+    s3.upload_file(output_file, R2_BUCKET, output_file)
+
+    public_url = f"{PUBLIC_URL}/{output_file}"
+
+    os.remove(input_file)
+    os.remove(output_file)
+
+    return jsonify({
+        "deliverie_url": public_url
+    })
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
