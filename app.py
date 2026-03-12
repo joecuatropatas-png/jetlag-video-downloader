@@ -18,28 +18,25 @@ s3 = boto3.client(
     aws_secret_access_key=R2_SECRET_KEY
 )
 
+PUBLIC_URL = "https://pub-953880307ee54af28bbea36d6f00a07c.r2.dev"
+
 @app.route("/download")
 def download():
 
     url = request.args.get("url")
+
     filename = f"{uuid.uuid4()}.mp4"
 
     subprocess.run([
-    "yt-dlp",
-    "-f", "best",
-    "-o", filename,
-    "--no-playlist",
-    url
-])
+        "yt-dlp",
+        "-f", "mp4",
+        "-o", filename,
+        url
+    ])
 
-if not os.path.exists(filename):
-    return jsonify({
-        "error": "video download failed"
-    }), 500
-    
     s3.upload_file(filename, R2_BUCKET, filename)
 
-    public_url = f"https://pub-953880307ee54af28bbea36d6f00a07c.r2.dev/{filename}"
+    public_url = f"{PUBLIC_URL}/{filename}"
 
     os.remove(filename)
 
